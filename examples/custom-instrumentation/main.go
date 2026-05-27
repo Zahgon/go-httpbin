@@ -2,8 +2,6 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/DataDog/datadog-go/statsd"
@@ -23,19 +21,12 @@ func main() {
 }
 
 func datadogObserver(client statsd.ClientInterface) httpbin.Observer {
-	return func(result httpbin.Result) {
-		// Log the request
-		log.Printf("%d %s %s %s", result.Status, result.Method, result.URI, result.Duration)
-
-		// Submit a new distribution metric to datadog with tags that allow
-		// graphing request rate, timing, errors broken down by
-		// method/status/path.
-		tags := []string{
-			fmt.Sprintf("method:%s", result.Method),
-			fmt.Sprintf("status_code:%d", result.Status),
-			fmt.Sprintf("status_class:%dxx", result.Status/100),
-			fmt.Sprintf("uri:%s", result.URI),
-		}
-		client.Distribution("httpbin.request", float64(result.Duration.Milliseconds()), tags, 1.0)
-	}
+	_ = "STUB: not implemented"
+	return *new(httpbin.Observer)
 }
+
+// Log the request
+
+// Submit a new distribution metric to datadog with tags that allow
+// graphing request rate, timing, errors broken down by
+// method/status/path.

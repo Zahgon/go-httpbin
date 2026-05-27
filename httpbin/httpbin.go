@@ -1,7 +1,6 @@
 package httpbin
 
 import (
-	"bytes"
 	"net/http"
 	"time"
 )
@@ -116,42 +115,19 @@ type HTTPBin struct {
 }
 
 // New creates a new HTTPBin instance
-func New(opts ...OptionFunc) *HTTPBin {
-	h := &HTTPBin{
-		MaxBodySize:   DefaultMaxBodySize,
-		MaxDuration:   DefaultMaxDuration,
-		DefaultParams: DefaultDefaultParams,
-		hostname:      DefaultHostname,
-		version:       versionResponse{Service: "go-httpbin"},
-	}
-	for _, opt := range opts {
-		opt(h)
-	}
+func New(opts ...OptionFunc) *HTTPBin { _ = "STUB: not implemented"; return nil }
 
-	// pre-compute some configuration values and pre-render templates
-	tmplData := struct{ Prefix string }{Prefix: h.prefix}
-	h.indexHTML = mustRenderTemplate("index.html.tmpl", tmplData)
-	h.formsPostHTML = mustRenderTemplate("forms-post.html.tmpl", tmplData)
-	h.statusSpecialCases = createSpecialCases(h.prefix)
+// pre-compute some configuration values and pre-render templates
 
-	// compute max Server-Sent Event count based on max request size and rough
-	// estimate of a single event's size on the wire
-	var buf bytes.Buffer
-	writeServerSentEvent(&buf, 999, time.Now())
-	h.maxSSECount = h.MaxBodySize / int64(buf.Len())
+// compute max Server-Sent Event count based on max request size and rough
+// estimate of a single event's size on the wire
 
-	// compute max JSONL line count the same way
-	buf.Reset()
-	writeJSONLSample(&buf)
-	h.maxJSONLCount = h.MaxBodySize / int64(buf.Len())
-
-	h.handler = h.Handler()
-	return h
-}
+// compute max JSONL line count the same way
 
 // ServeHTTP implememnts the http.Handler interface.
 func (h *HTTPBin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.handler.ServeHTTP(w, r)
+	_ = "STUB: not implemented"
+	return
 }
 
 // Assert that HTTPBin implements http.Handler interface
@@ -159,108 +135,24 @@ var _ http.Handler = &HTTPBin{}
 
 // Handler returns an http.Handler that exposes all HTTPBin endpoints
 func (h *HTTPBin) Handler() http.Handler {
-	mux := http.NewServeMux()
+	_ = "STUB: not implemented"
+	return *
 
 	// Endpoints restricted to specific methods
-	mux.HandleFunc("DELETE /delete", h.RequestWithBody)
-	mux.HandleFunc("GET /{$}", h.Index)
-	mux.HandleFunc("GET /encoding/utf8", h.UTF8)
-	mux.HandleFunc("GET /forms/post", h.FormsPost)
-	mux.HandleFunc("GET /get", h.Get)
-	mux.HandleFunc("GET /websocket/echo", h.WebSocketEcho)
-	mux.HandleFunc("HEAD /head", h.Get)
-	mux.HandleFunc("PATCH /patch", h.RequestWithBody)
-	mux.HandleFunc("POST /post", h.RequestWithBody)
-	mux.HandleFunc("PUT /put", h.RequestWithBody)
-
-	// Endpoints that accept any methods
-	mux.HandleFunc("/absolute-redirect/{numRedirects}", h.AbsoluteRedirect)
-	mux.HandleFunc("/anything", h.Anything)
-	mux.HandleFunc("/anything/", h.Anything)
-	mux.HandleFunc("/base64/{data}", h.Base64)
-	mux.HandleFunc("/base64/{operation}/{data}", h.Base64)
-	mux.HandleFunc("/basic-auth/{user}/{password}", h.BasicAuth)
-	mux.HandleFunc("/bearer", h.Bearer)
-	mux.HandleFunc("/bytes/{numBytes}", h.Bytes)
-	mux.HandleFunc("/cache", h.Cache)
-	mux.HandleFunc("/cache/{numSeconds}", h.CacheControl)
-	mux.HandleFunc("/cookies", h.Cookies)
-	mux.HandleFunc("/cookies/delete", h.DeleteCookies)
-	mux.HandleFunc("/cookies/set", h.SetCookies)
-	mux.HandleFunc("/deflate", h.Deflate)
-	mux.HandleFunc("/delay/{duration}", h.Delay)
-	mux.HandleFunc("/deny", h.Deny)
-	mux.HandleFunc("/digest-auth/{qop}/{user}/{password}", h.DigestAuth)
-	mux.HandleFunc("/digest-auth/{qop}/{user}/{password}/{algorithm}", h.DigestAuth)
-	mux.HandleFunc("/drip", h.Drip)
-	mux.HandleFunc("/dump/request", h.DumpRequest)
-	mux.HandleFunc("/env", h.Env)
-	mux.HandleFunc("/etag/{etag}", h.ETag)
-	mux.HandleFunc("/gzip", h.Gzip)
-	mux.HandleFunc("/headers", h.Headers)
-	mux.HandleFunc("/hidden-basic-auth/{user}/{password}", h.HiddenBasicAuth)
-	mux.HandleFunc("/hostname", h.Hostname)
-	mux.HandleFunc("/html", h.HTML)
-	mux.HandleFunc("/image", h.ImageAccept)
-	mux.HandleFunc("/image/{kind}", h.Image)
-	mux.HandleFunc("/ip", h.IP)
-	mux.HandleFunc("/json", h.JSON)
-	mux.HandleFunc("/jsonl", h.JSONL)
-	mux.HandleFunc("/links/{numLinks}", h.Links)
-	mux.HandleFunc("/links/{numLinks}/{offset}", h.Links)
-	mux.HandleFunc("/range/{numBytes}", h.Range)
-	mux.HandleFunc("/redirect-to", h.RedirectTo)
-	mux.HandleFunc("/redirect/{numRedirects}", h.Redirect)
-	mux.HandleFunc("/relative-redirect/{numRedirects}", h.RelativeRedirect)
-	mux.HandleFunc("/response-headers", h.ResponseHeaders)
-	mux.HandleFunc("/robots.txt", h.Robots)
-	mux.HandleFunc("/sse", h.SSE)
-	mux.HandleFunc("/status/{code}", h.Status)
-	mux.HandleFunc("/stream-bytes/{numBytes}", h.StreamBytes)
-	mux.HandleFunc("/stream/{numLines}", h.Stream)
-	mux.HandleFunc("/trailers", h.Trailers)
-	mux.HandleFunc("/unstable", h.Unstable)
-	mux.HandleFunc("POST /upload", h.RequestWithBodyDiscard)
-	mux.HandleFunc("PUT /upload", h.RequestWithBodyDiscard)
-	mux.HandleFunc("PATCH /upload", h.RequestWithBodyDiscard)
-	mux.HandleFunc("/user-agent", h.UserAgent)
-	mux.HandleFunc("/uuid", h.UUID)
-	mux.HandleFunc("/version", h.Version)
-	mux.HandleFunc("/xml", h.XML)
-
-	// existing httpbin endpoints that we do not support
-	mux.HandleFunc("/brotli", notImplementedHandler)
-
-	// Apply global middleware
-	var handler http.Handler
-	handler = mux
-	handler = limitRequestSize(h.MaxBodySize, handler)
-	handler = preflight(handler)
-	handler = autohead(handler)
-
-	if h.prefix != "" {
-		handler = http.StripPrefix(h.prefix, handler)
-	}
-
-	if h.Observer != nil {
-		handler = observe(h.Observer, handler)
-	}
-
-	return handler
+	new(http.Handler)
 }
 
-func (h *HTTPBin) setExcludeHeaders(excludeHeaders string) {
-	regex := createFullExcludeRegex(excludeHeaders)
-	if regex != nil {
-		h.excludeHeadersProcessor = createExcludeHeadersProcessor(regex)
-	}
-}
+// Endpoints that accept any methods
+
+// existing httpbin endpoints that we do not support
+
+// Apply global middleware
+
+func (h *HTTPBin) setExcludeHeaders(excludeHeaders string) { _ = "STUB: not implemented"; return }
 
 // mustEscapeResponse returns true if the response body should be HTML-escaped
 // to prevent XSS and similar attacks when rendered by a web browser.
 func (h *HTTPBin) mustEscapeResponse(contentType string) bool {
-	if h.unsafeAllowDangerousResponses {
-		return false
-	}
-	return isDangerousContentType(contentType)
+	_ = "STUB: not implemented"
+	return false
 }
